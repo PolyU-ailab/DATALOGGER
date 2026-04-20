@@ -17,6 +17,9 @@ BLECharacteristic *pTxCharacteristic = NULL;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 
+bool newDataReceived = false;
+int data[8];
+
 // Callback class to track when a device connects or disconnects
 class MyServerCallbacks: public BLEServerCallbacks {
     void onConnect(BLEServer* pServer) {
@@ -30,17 +33,19 @@ class MyServerCallbacks: public BLEServerCallbacks {
     }
 };
 
-// Callback class to handle incoming BLE data (Same as before)
+// Callback class to handle incoming BLE data 
 class MyCharacteristicCallbacks: public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) {
       uint8_t* rxData = pCharacteristic->getData();
       size_t rxLength = pCharacteristic->getLength();
 
       if (rxLength > 0) {
+        newDataReceived = true;
         Serial.print("Received Data: ");
         for (int i = 0; i < rxLength; i++) {
-          if (rxData[i] < 0x10) Serial.print("0"); 
-          Serial.print(rxData[i], HEX);
+          int val = rxData[i];
+          data[i] = val;
+          Serial.print(val);
           Serial.print(" ");
         }
         Serial.println();
@@ -104,18 +109,28 @@ void loop() {
   if (deviceConnected) {
     
     // Example: Let's create a byte array to send [0xAA, 0xBB, 0xCC, 0xDD]
-    uint8_t txData[] = {0xAA, 0xBB, 0xCC, 0xDD};
-    size_t txLength = sizeof(txData);
+    //uint8_t txData[] = {0xAA, 0xBB, 0xCC, 0xDD};
+    //size_t txLength = sizeof(txData);
 
     // Set the value of the characteristic to our byte array
-    pTxCharacteristic->setValue(txData, txLength);
+    //pTxCharacteristic->setValue(txData, txLength);
     
     // Send the notification to the phone
-    pTxCharacteristic->notify();
+    //pTxCharacteristic->notify();
     
-    Serial.println("Sent data notification to phone.");
+    //Serial.println("Sent data notification to phone.");
     
-    delay(3000); // Wait 3 seconds before sending the next one
+    if (newDataReceived){
+      Serial.print("Data in LOOP : ");
+      int n = sizeof(data) / sizeof(data[0]);
+      for (int i = 0; i < n; i++) {
+        Serial.print(data[i]);
+        Serial.print(" ");
+      }
+      newDataReceived = false;
+    }
+
+    delay(50); 
   }
 
   // Handle disconnection smoothly by restarting advertising
